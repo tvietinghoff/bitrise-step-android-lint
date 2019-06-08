@@ -58,16 +58,27 @@ func filterVariants(module, variant string, variantsMap gradle.Variants) (gradle
 	if variant == "" {
 		return variantsMap, nil
 	}
+	variantsWanted := make(map[string]int)
+	for _, v := range strings.Split(variant, " ") {
+		v = strings.TrimSpace(v)
+		if len(v) > 0 {
+			variantsWanted[strings.ToLower(v)] = 1
+		}
+	}
 	filteredVariants := gradle.Variants{}
 	for m, variants := range variantsMap {
 		for _, v := range variants {
-			if strings.ToLower(v) == strings.ToLower(variant) {
+			v = strings.ToLower(v)
+			if variantsWanted[v] > 0 {
 				filteredVariants[m] = append(filteredVariants[m], v)
+				variantsWanted[v]++
 			}
 		}
 	}
-	if len(filteredVariants) == 0 {
-		return nil, fmt.Errorf("variant: %s not found in any module", variant)
+	for key, count := range variantsWanted {
+		if count == 1 {
+			return nil, fmt.Errorf("variant: %s not found in any module", key)
+		}
 	}
 	return filteredVariants, nil
 }
